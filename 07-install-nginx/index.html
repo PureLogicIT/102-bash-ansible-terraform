@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Cosmic Test Page with Space Game</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e2f; /* Dark blue */
+            color: #fff;
+            background-image: url('https://www.w3schools.com/w3images/space.jpg'); /* Space background */
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+            color: #fff;
+            padding: 40px 0;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-bottom: 2px solid #4A90E2; /* Blue border */
+        }
+        header h1 {
+            margin: 0;
+            font-size: 3em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        header p {
+            font-size: 1.3em;
+            font-weight: 300;
+            color: #ddd;
+        }
+
+        /* Game Container */
+        .game-container {
+            width: 100%;
+            height: 500px;
+            background-color: rgba(0, 0, 0, 0.8);
+            margin-top: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Space Ship */
+        .spaceship {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background-color: #4A90E2;
+            border-radius: 5px;
+        }
+
+        /* Asteroids */
+        .asteroid {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #ccc;
+            border-radius: 50%;
+        }
+
+        /* Score Counter */
+        .score-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.5em;
+            color: #fff;
+            z-index: 10;
+        }
+
+        /* Game Over Message */
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            color: #fff;
+            display: none;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1e1e2f;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+            font-size: 0.9em;
+            border-top: 2px solid #4A90E2;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>Cosmic Test Page</h1>
+        <p>Explore the mysteries of the universe through various HTML elements and styles.</p>
+    </header>
+
+    <!-- Game Section -->
+    <section>
+        <div class="game-container" id="gameContainer">
+            <div class="spaceship" id="spaceship"></div>
+            <div class="score-container" id="scoreContainer">Score: 0</div>
+            <div class="game-over" id="gameOver">Game Over!</div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Cosmic Exploration. All rights reserved. | <a href="#" style="color: #4A90E2;">Privacy Policy</a></p>
+    </footer>
+
+    <script>
+        // Game Variables
+        const spaceship = document.getElementById('spaceship');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameOver = document.getElementById('gameOver');
+        const scoreContainer = document.getElementById('scoreContainer');
+        let spaceshipPosition = gameContainer.clientWidth / 2 - 20;
+        let isGameOver = false;
+        const spaceshipSpeed = 20;
+        const asteroidSpeed = 5;
+        let score = 0; // Initialize score
+
+        // Update spaceship position
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
+
+            if (e.key === 'ArrowLeft' && spaceshipPosition > 0) {
+                spaceshipPosition -= spaceshipSpeed;
+            } else if (e.key === 'ArrowRight' && spaceshipPosition < gameContainer.clientWidth - 40) {
+                spaceshipPosition += spaceshipSpeed;
+            }
+            spaceship.style.left = spaceshipPosition + 'px';
+        });
+
+        // Function to spawn asteroids
+        function spawnAsteroids() {
+            if (isGameOver) return;
+
+            const asteroid = document.createElement('div');
+            asteroid.classList.add('asteroid');
+            asteroid.style.left = Math.random() * (gameContainer.clientWidth - 40) + 'px';
+            gameContainer.appendChild(asteroid);
+
+            let asteroidTop = 0;
+            let asteroidLeft = parseInt(asteroid.style.left, 10);
+
+            // Animate asteroid falling
+            const asteroidInterval = setInterval(() => {
+                if (isGameOver) {
+                    clearInterval(asteroidInterval);
+                    return;
+                }
+
+                asteroidTop += asteroidSpeed;
+                asteroid.style.top = asteroidTop + 'px';
+
+                // Check for collision
+                if (asteroidTop >= gameContainer.clientHeight - 40 &&
+                    asteroidLeft >= spaceshipPosition &&
+                    asteroidLeft <= spaceshipPosition + 40) {
+                    gameOver.style.display = 'block';
+                    isGameOver = true;
+                    clearInterval(asteroidInterval);
+                }
+
+                // Remove asteroid when it goes off screen
+                if (asteroidTop >= gameContainer.clientHeight) {
+                    clearInterval(asteroidInterval);
+                    gameContainer.removeChild(asteroid);
+                    // Increase score for dodging asteroid
+                    score++;
+                    scoreContainer.textContent = 'Score: ' + score;
+                }
+            }, 20);
+        }
+
+        // Start the game
+        function startGame() {
+            isGameOver = false;
+            gameOver.style.display = 'none';
+            score = 0; // Reset score
+            scoreContainer.textContent = 'Score: ' + score;
+            spaceshipPosition = gameContainer.clientWidth / 2 - 20;
+            spaceship.style.left = spaceshipPosition + 'px';
+
+            // Spawn asteroids at intervals
+            setInterval(spawnAsteroids, 1500); // Asteroids spawn every 1.5 seconds
+        }
+
+        // Start the game when the page loads
+        startGame();
+    </script>
+
+</body>
+</html>
