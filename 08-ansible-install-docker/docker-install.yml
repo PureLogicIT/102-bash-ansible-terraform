@@ -1,0 +1,40 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Install required system packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+    # sudo groupadd docker
+    - name: Create "docker" group
+      group:
+        name: "docker"
+        state: present
+
+# sudo usermod -aG docker root
+    - name: Add remote "ubuntu" user to "docker" group
+      user:
+        name: "{{ user }}"
+        group: "docker"
+        append: yes

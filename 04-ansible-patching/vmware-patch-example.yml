@@ -1,0 +1,67 @@
+---
+- hosts: all
+  serial: 2
+  vars:
+    vmware_host: '{{ lookup( ''env'', ''VMWARE_HOST'') }}'
+    vmware_user: '{{ lookup( ''env'', ''VMWARE_USER'') }}'
+    vmware_password: '{{ lookup( ''env'', ''VMWARE_PASSWORD'') }}'
+    vmware_datacenter: Dev DC
+    vmware_folder: /Dev/Ansible-Demo
+    snapshot_name: "ansible patch {{ ansible_date_time.date }}"
+
+  tasks:
+    - name: Checking for pending updates
+      command: /usr/lib/update-notifier/apt-check --package-names
+      register: packages
+      changed_when: packages.stderr != ""
+
+    - name: Taking snapshot of host on {{ vmware_host }}
+      vmware_guest_snapshot:
+        hostname: "{{ vmware_host }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        name: "{{ inventory_hostname }}"
+        datacenter: "{{ vmware_datacenter }}"
+        folder: "{{ vmware_folder }}"
+        state: present
+        snapshot_name: "{{ snapshot_name }}"
+        validate_certs: no
+      delegate_to: localhost  
+      tags: snapshot
+      no_log: true
+      when: packages.stderr != ""
+
+    - name: update, upgrade, autoremove
+      become: yes
+      apt: 
+        update_cache: yes
+        upgrade: full
+        autoremove: yes
+      when: packages.stderr != ""
+
+    - name: Check if a reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+      changed_when: reboot_required.stat.exists
+
+    - name: Reboot system if required
+      become: yes
+      reboot:
+        reboot_timeout: 900
+      when: reboot_required.stat.exists == true
+      register: restart_status
+    
+    - name: Delete snapshot {{ snapshot_name }}
+      vmware_guest_snapshot:
+        hostname: "{{ vmware_host }}"
+        username: "{{ vmware_user }}"
+        password: "{{ vmware_password }}"
+        name: "{{ inventory_hostname }}"
+        datacenter: "{{ vmware_datacenter }}"
+        folder: "{{ vmware_folder }}"
+        state: absent
+        snapshot_name: "{{ snapshot_name }}"
+        validate_certs: no
+      delegate_to: localhost  
+      when: reboot_required.stat.exists and restart_status.changed

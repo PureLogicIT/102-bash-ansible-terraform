@@ -1,0 +1,23 @@
+---
+- hosts: nginx
+  become: yes
+
+  tasks:
+  
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+
+    - name: Start nginx service
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: started
+
+    - name: Copy a new index.html file from Ansible client to target machine Nginx directory
+      ansible.builtin.copy:
+        src: index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
